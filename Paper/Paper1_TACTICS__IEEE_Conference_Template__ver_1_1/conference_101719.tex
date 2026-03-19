@@ -490,6 +490,8 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \usetikzlibrary{positioning}
 \hbadness=10000
 \vbadness=10000
@@ -572,12 +574,38 @@ EcoAgentOps is inserted as a lightweight container (Docker $<$200 MB) between ra
 \draw[->, thick] (feast) -- (training);
 \end{tikzpicture}%
 }
-\caption{Overview of the EcoAgentOps pipeline. The lightweight surrogate and PPO policy operate in real time inside the feature store.}
+\caption{Overview of the EcoAgentOps pipeline. The lightweight surrogate and PPO policy operate in real time inside the feature store, enabling energy-aware pruning without central reprocessing.}
 \label{fig:architecture}
 \end{figure*}
 
 \subsection{Multimodal Surrogate Model}
 The surrogate runs entirely on CPU and produces two scalar predictions per sample:
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=1.2cm, auto, every node/.style={rectangle, draw, rounded corners, align=center, minimum width=2.7cm, text width=3.0cm, inner sep=3pt, font=\footnotesize}]
+\node (img) [fill=gray!10] {Input Image};
+\node (clip) [below=of img, fill=gray!10] {CLIP ViT-B/16 (frozen)};
+\node (txt) [right=2.8cm of img, fill=gray!10] {Input Text};
+\node (bert) [below=of txt, fill=gray!10] {tinyBERT (frozen)};
+\node (concat) [below=1.6cm of clip, xshift=1.4cm, fill=gray!10] {Fusion Input $[\mathbf{e}_i;\mathbf{t}_i;\mathbf{m}_i;c_t]$};
+\node (mlp) [below=of concat, fill=gray!10] {Fusion MLP (trainable)};
+\node (u) [below left=0.9cm and 0.5cm of mlp, fill=gray!10] {Utility $u_i$};
+\node (e) [below right=0.9cm and 0.5cm of mlp, fill=gray!10] {Energy Proxy $\hat{e}_i$};
+\draw[->, thick] (img) -- (clip);
+\draw[->, thick] (txt) -- (bert);
+\draw[->, thick] (clip) -- (concat);
+\draw[->, thick] (bert) -- (concat);
+\draw[->, thick] (concat) -- (mlp);
+\draw[->, thick] (mlp) -- (u);
+\draw[->, thick] (mlp) -- (e);
+\end{tikzpicture}%
+}
+\caption{Architecture of the lightweight multimodal surrogate. CLIP and BERT encoders are frozen; only the fusion MLP is trained on held-out data.}
+\label{fig:surrogate_arch}
+\end{figure}
+
 \begin{equation}
 \mathbf{e}_i = \text{CLIP-ViT-B/16}(I_i), \quad \mathbf{t}_i = \text{tinyBERT}(T_i)
 \end{equation}
@@ -594,6 +622,27 @@ where $u_i \in [0,1]$ is the predicted downstream utility proxy and $\hat{e}_i$ 
 
 \subsection{Reinforcement-Learning Policy}
 We formulate pruning as a Markov Decision Process and train a PPO agent once offline:
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=1.25cm, auto, every node/.style={rectangle, draw, rounded corners, align=center, minimum width=3.0cm, text width=3.1cm, inner sep=3pt, font=\footnotesize}]
+\node (state) [fill=gray!10] {State $s_t$\\$\{u_i, \hat{e}_i, c_t, \text{stats}\}$};
+\node (policy) [below=of state, fill=gray!10] {PPO Policy\\$\pi_\phi(a_t|s_t)$};
+\node (action) [below=of policy, fill=gray!10] {Action $a_t \in \{0,1,2\}$\\Prune / Keep / Compress};
+\node (reward) [right=2.5cm of action, fill=gray!10] {Reward $r_t$\\$\alpha\Delta\text{Acc}-\lambda\hat{e}_ic_t-\beta\cdot\text{latency}$};
+\node (update) [below=of reward, fill=gray!10] {PPO Update\\(clipped objective\)};
+\draw[->, thick] (state) -- (policy);
+\draw[->, thick] (policy) -- (action);
+\draw[->, thick] (action) -- node[above,font=\scriptsize] {observe} (reward);
+\draw[->, thick] (reward) -- (update);
+\draw[->, thick] (update.west) -- ++(-2.2,0) |- node[pos=0.25,left,font=\scriptsize] {next state} (state.west);
+\end{tikzpicture}%
+}
+\caption{Markov Decision Process and PPO policy used for per-sample pruning decisions. The reward explicitly balances downstream accuracy and real-time carbon cost.}
+\label{fig:ppo_policy}
+\end{figure}
+
 \begin{itemize}
     \item \textbf{State $s_t$}: \{batch stats, $u_i$, $\hat{e}_i$, $c_t$, running SLA metrics\}.
     \item \textbf{Action space $a_t$}: $\in \{\text{prune (0)}, \text{keep (1)}, \text{compress (2)}\}$.
@@ -642,6 +691,36 @@ No target-agent retraining or central reprocessing is ever required.
 \section{Results \& Discussion}
 \subsection{Main Results}
 As shown in Table \ref{tab1}, EcoAgentOps achieves a \textbf{15.8\% energy reduction} and \textbf{+10.4\% absolute accuracy} vs. the strongest baseline (paired t-test $p < 0.01$ across 5 runs). Pareto dominance is strict across all pruning ratios.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\columnwidth,
+    height=0.62\columnwidth,
+    xlabel={Total Training Energy (kWh)},
+    ylabel={MMStar Accuracy (\%)},
+    xmin=68, xmax=146,
+    ymin=46, ymax=60,
+    grid=major,
+    legend style={font=\scriptsize, at={(0.02,0.98)}, anchor=north west},
+    tick label style={font=\scriptsize},
+    label style={font=\footnotesize}
+]
+\addplot[only marks, mark=square*, mark size=2.0pt, black] coordinates {(142.3,48.7)};
+\addplot[only marks, mark=o, mark size=2.0pt, gray] coordinates {(98.1,47.2)};
+\addplot[only marks, mark=triangle*, mark size=2.2pt, blue] coordinates {(89.4,50.1)};
+\addplot[only marks, mark=diamond*, mark size=2.2pt, orange] coordinates {(82.7,51.3)};
+\addplot[only marks, mark=pentagon*, mark size=2.2pt, teal] coordinates {(79.4,52.8)};
+\addplot[only marks, mark=star, mark size=3.2pt, red, very thick] coordinates {(71.8,59.1)};
+\addplot[dashed, red] coordinates {(71.8,59.1) (142.3,59.1)};
+\addplot[dashed, red] coordinates {(71.8,59.1) (71.8,46)};
+\legend{No pruning, Random, CLIP-score, Coreset 2026, Cascading, EcoAgentOps}
+\end{axis}
+\end{tikzpicture}
+\caption{Pareto-optimal trade-off between energy consumption and downstream accuracy. EcoAgentOps strictly dominates all 2025--2026 baselines.}
+\label{fig:pareto_main}
+\end{figure}
 
 \begin{table}[htbp]
 \caption{Performance Metrics across Pruning Methods}
