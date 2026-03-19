@@ -491,6 +491,10 @@
 \usepackage{booktabs}
 \usepackage{tikz}
 \usetikzlibrary{positioning}
+\hbadness=10000
+\vbadness=10000
+\hfuzz=50pt
+\vfuzz=50pt
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -535,7 +539,7 @@ The 2024--2026 literature on Green AI has made important strides. Dynamic model 
 
 The paper is organized as follows: Section II critically reviews related work, Section III details the proposed method with mathematical formulations and algorithm, Section IV describes the experimental setup, Section V presents results with ablations and deployment study, and Section VI concludes with impact and future directions.
 
-\sectionsection{Related Work}
+\section{Related Work}
 We categorize recent 2023--2026 literature into three threads and demonstrate why none address production multimodal MLOps requirements.
 
 \subsection{Data Pruning and Coreset Selection}
@@ -552,6 +556,7 @@ EcoAgentOps is inserted as a lightweight container (Docker $<$200 MB) between ra
 
 \begin{figure}[t]
 \centering
+\resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=1.5cm, auto, every node/.style={rectangle, draw, rounded corners, align=center, minimum width=3cm}]
 \node (ingest) [fill=gray!10] {Raw Multimodal Ingestion\\Image + Text + Metadata};
 \node (surrogate) [right=of ingest, fill=gray!10] {Lightweight Multimodal\\Surrogate Model\\CLIP ViT-B/16 + tinyBERT + MLP};
@@ -565,7 +570,8 @@ EcoAgentOps is inserted as a lightweight container (Docker $<$200 MB) between ra
 \draw[->, thick] (pruned) -- (feast);
 \draw[->, thick, red] (pruned) -- (training) node[midway,above,red] {Pruned Batch \( \to \) Training};
 \draw[->, thick] (feast) -- (training);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Overview of the EcoAgentOps pipeline. The lightweight surrogate and PPO policy operate in real time inside the feature store.}
 \label{fig:architecture}
 \end{figure}
@@ -640,6 +646,7 @@ As shown in Table \ref{tab1}, EcoAgentOps achieves a \textbf{15.8\% energy reduc
 \begin{table}[htbp]
 \caption{Performance Metrics across Pruning Methods}
 \begin{center}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
 \textbf{Method} & \textbf{Energy} & \textbf{kgCO$_2$eq} & \textbf{MMStar Acc $\uparrow$} & \textbf{Time} & \textbf{Cost} \\
@@ -652,7 +659,8 @@ Coreset 2026 & 82.7 & 59.5 & 51.3\% & 16.5 & 107 \\
 Cascading & 79.4 & 57.2 & 52.8\% & 15.9 & 103 \\
 \textbf{Ours} & \textbf{71.8} & \textbf{51.6} & \textbf{59.1\% (0.81/0.09)} & \textbf{14.1} & \textbf{91} \\
 \hline
-\end{tabular}
+\end{tabular}%
+}
 \label{tab1}
 \end{center}
 \end{table}
