@@ -554,9 +554,9 @@ Recent works focus on weight pruning after training \cite{b6} or are modality-sp
 \section{Proposed Method}
 EcoAgentOps is inserted as a lightweight container (Docker $<$200 MB) between raw data ingestion and the feature store. It processes batches in real time without blocking the main pipeline.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\resizebox{\columnwidth}{!}{%
+\resizebox{0.98\textwidth}{!}{%
 \begin{tikzpicture}[node distance=1.5cm, auto, every node/.style={rectangle, draw, rounded corners, align=center, minimum width=3cm}]
 \node (ingest) [fill=gray!10] {Raw Multimodal Ingestion\\Image + Text + Metadata};
 \node (surrogate) [right=of ingest, fill=gray!10] {Lightweight Multimodal\\Surrogate Model\\CLIP ViT-B/16 + tinyBERT + MLP};
@@ -574,7 +574,7 @@ EcoAgentOps is inserted as a lightweight container (Docker $<$200 MB) between ra
 }
 \caption{Overview of the EcoAgentOps pipeline. The lightweight surrogate and PPO policy operate in real time inside the feature store.}
 \label{fig:architecture}
-\end{figure}
+\end{figure*}
 
 \subsection{Multimodal Surrogate Model}
 The surrogate runs entirely on CPU and produces two scalar predictions per sample:
