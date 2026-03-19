@@ -557,18 +557,18 @@ EcoAgentOps is inserted as a lightweight container (Docker $<$200 MB) between ra
 \begin{figure*}[t]
 \centering
 \resizebox{0.98\textwidth}{!}{%
-\begin{tikzpicture}[node distance=1.5cm, auto, every node/.style={rectangle, draw, rounded corners, align=center, minimum width=3cm}]
+\begin{tikzpicture}[node distance=1.9cm, auto, every node/.style={rectangle, draw, rounded corners, align=center, minimum width=3cm, text width=3.4cm, inner sep=4pt, font=\footnotesize}]
 \node (ingest) [fill=gray!10] {Raw Multimodal Ingestion\\Image + Text + Metadata};
 \node (surrogate) [right=of ingest, fill=gray!10] {Lightweight Multimodal\\Surrogate Model\\CLIP ViT-B/16 + tinyBERT + MLP};
 \node (rl) [right=of surrogate, fill=gray!10] {RL Policy (PPO)\\Decision Engine\\(Prune / Keep / Compress)};
 \node (pruned) [right=of rl, fill=gray!10] {Pruned Batch};
-\node (feast) [above=of pruned] {Feature Store\\(Feast)};
+\node (feast) [above=1.8cm of pruned] {Feature Store\\(Feast)};
 \node (training) [right=of pruned, fill=gray!10] {Target Multimodal Agent\\Training\\(LLaVA-1.5-7B LoRA)};
-\draw[->, thick] (ingest) -- (surrogate) node[midway,above] {Utility + Energy Proxy};
-\draw[->, thick] (surrogate) -- (rl) node[midway,above] {Carbon Intensity \( c_t \)};
+\draw[->, thick] (ingest) -- (surrogate) node[pos=0.5,above,yshift=1pt] {Utility + Energy Proxy};
+\draw[->, thick] (surrogate) -- (rl) node[pos=0.5,above,yshift=1pt] {Carbon Intensity \( c_t \)};
 \draw[->, thick] (rl) -- (pruned);
 \draw[->, thick] (pruned) -- (feast);
-\draw[->, thick, red] (pruned) -- (training) node[midway,above,red] {Pruned Batch \( \to \) Training};
+\draw[->, thick, red] (pruned) -- (training) node[pos=0.5,below,yshift=-1pt,red] {Pruned Batch \( \to \) Training};
 \draw[->, thick] (feast) -- (training);
 \end{tikzpicture}%
 }
