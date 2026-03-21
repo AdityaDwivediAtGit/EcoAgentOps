@@ -27,7 +27,7 @@ EcoAgentOps was evaluated end-to-end on **1 million streaming multimodal samples
 **Expected runtime on single A100 80 GB:** 10–14 calendar days.
 
 **GitHub Repository (one-click reproduction):**  
-https://github.com/aditya-ieee/ecoagentops-experiments-2026  
+[AdityaDwivediAtGit/EcoAgentOps](https://github.com/AdityaDwivediAtGit/EcoAgentOps)
 (Contains Dockerfile, requirements.txt, all scripts, raw logs, WandB links, and CodeCarbon CSVs.)
 
 ---
